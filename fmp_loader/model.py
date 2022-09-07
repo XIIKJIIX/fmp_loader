@@ -14,7 +14,6 @@ def maybe_parse_date(date_str: str) -> Optional[date]:
     parsed_date = date.fromisoformat(date_str)
     return parsed_date
   except ValueError:
-    # logging.warn(f"Found invalid date format: '{date_str}'")
     return None
 
 def parse_decimal_from_float(val: float):
