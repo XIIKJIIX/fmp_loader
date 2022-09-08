@@ -1,5 +1,5 @@
 import abc
-from ast import List
+from typing import List
 import json
 import os
 from sqlalchemy.engine.base import Engine
@@ -89,24 +89,28 @@ class FnmRestApiDatasource(Datasource):
   def __init__(self, api_key: str) -> None:
      self.api_key = api_key
 
-  def fetch_historical_dividends(self, symbol: str) -> dict:
-    url = f"https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/AAPL?apikey={self.api_key}"
-    return requests.get(url).json()
+  def fetch_historical_dividends(self, symbol: str) -> List[HistoricalDividend]:
+    url = f"https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/{symbol}?apikey={self.api_key}"
+    data = requests.get(url).json()
+    return [HistoricalDividend.from_dict({**d, "symbol": symbol}) for d in data["historical"]]
 
-  def fetch_delisted_companies(self, page: int = 0) -> dict:
+  def fetch_delisted_companies(self, page: int = 0) -> List[DelistedCompany]:
     url = f"https://financialmodelingprep.com/api/v3/delisted-companies?page={page}&apikey={self.api_key}"
-    return requests.get(url).json()
+    data = requests.get(url).json()
+    return [DelistedCompany.from_dict(d) for d in data]
 
 class FnmLocalFileDatasource(Datasource):
   def __init__(self, data_dir: str) -> None:
     self.data_dir = data_dir
 
-  def fetch_historical_dividends(self, symbol: str) -> dict:
+  def fetch_historical_dividends(self, symbol: str) -> List[HistoricalDividend]:
     file_path = os.path.join(self.data_dir, f"{symbol}_dividend.json")
     with open(file_path, "r") as f:
-      return json.load(f)
+      data = json.load(f)
+      return [HistoricalDividend.from_dict({**d, "symbol": symbol}) for d in data["historical"]]
 
-  def fetch_delisted_companies(self, page: int = 0) -> dict:
+  def fetch_delisted_companies(self, page: int = 0) -> List[DelistedCompany]:
     file_path = os.path.join(self.data_dir, f"delisted_{page}.json")
     with open(file_path, "r") as f:
-      return json.load(f)
+      data = json.load(f)
+      return [DelistedCompany.from_dict(d) for d in data]
