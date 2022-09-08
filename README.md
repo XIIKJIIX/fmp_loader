@@ -80,3 +80,8 @@ python -m fmp_loader --api delisted_company --page 9
 ```bash
 pytest
 ```
+
+## Linting
+```bash
+black .
+```
