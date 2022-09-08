@@ -85,13 +85,15 @@ class Datasource(abc.ABC):
   def fetch_delisted_companies(self, page: int = 0):
     raise NotImplementedError
 
-class FnmRestApiDatasource(Datasource):
+class FmpRestApiDatasource(Datasource):
   def __init__(self, api_key: str) -> None:
      self.api_key = api_key
 
   def fetch_historical_dividends(self, symbol: str) -> List[HistoricalDividend]:
     url = f"https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/{symbol}?apikey={self.api_key}"
     data = requests.get(url).json()
+    if "historical" not in data:
+      return []
     return [HistoricalDividend.from_dict({**d, "symbol": symbol}) for d in data["historical"]]
 
   def fetch_delisted_companies(self, page: int = 0) -> List[DelistedCompany]:
@@ -99,18 +101,16 @@ class FnmRestApiDatasource(Datasource):
     data = requests.get(url).json()
     return [DelistedCompany.from_dict(d) for d in data]
 
-class FnmLocalFileDatasource(Datasource):
-  def __init__(self, data_dir: str) -> None:
-    self.data_dir = data_dir
+class FmpLocalFileDatasource(Datasource):
+  def __init__(self, file_path: str) -> None:
+    self.file_path = file_path
 
   def fetch_historical_dividends(self, symbol: str) -> List[HistoricalDividend]:
-    file_path = os.path.join(self.data_dir, f"{symbol}_dividend.json")
-    with open(file_path, "r") as f:
+    with open(self.file_path, "r") as f:
       data = json.load(f)
       return [HistoricalDividend.from_dict({**d, "symbol": symbol}) for d in data["historical"]]
 
   def fetch_delisted_companies(self, page: int = 0) -> List[DelistedCompany]:
-    file_path = os.path.join(self.data_dir, f"delisted_{page}.json")
-    with open(file_path, "r") as f:
+    with open(self.file_path, "r") as f:
       data = json.load(f)
       return [DelistedCompany.from_dict(d) for d in data]
